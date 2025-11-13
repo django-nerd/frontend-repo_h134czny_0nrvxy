@@ -1,5 +1,6 @@
 import { motion, useMotionValue, animate } from "framer-motion";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import MovieCard from "./MovieCard";
 
 /**
@@ -7,6 +8,7 @@ import MovieCard from "./MovieCard";
  * - Arranges cards in a circular "rolling deck" around the center
  * - Slowly auto-rotates; users can wheel/drag to nudge rotation
  * - Swipe left/right to move to next/prev card (loops)
+ * - Arrow buttons to navigate as well
  */
 export default function DeckCarousel({ items = [] }) {
   const rotation = useMotionValue(0);
@@ -25,6 +27,35 @@ export default function DeckCarousel({ items = [] }) {
   const step = 360 / count;
   const radius = 200; // ring radius
 
+  // Helpers: next/prev
+  const goNext = useCallback(() => {
+    const target = rotation.get() + step;
+    animate(rotation, target, { type: "spring", stiffness: 120, damping: 20 });
+  }, [rotation, step]);
+
+  const goPrev = useCallback(() => {
+    const target = rotation.get() - step;
+    animate(rotation, target, { type: "spring", stiffness: 120, damping: 20 });
+  }, [rotation, step]);
+
+  // Keyboard arrows
+  const containerRef = useRef(null);
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const onKey = (e) => {
+      if (e.key === "ArrowRight") {
+        e.preventDefault();
+        goNext();
+      } else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        goPrev();
+      }
+    };
+    el.addEventListener("keydown", onKey);
+    return () => el.removeEventListener("keydown", onKey);
+  }, [goNext, goPrev]);
+
   // Wheel interaction to nudge rotation
   const onWheel = (e) => {
     e.preventDefault();
@@ -36,7 +67,6 @@ export default function DeckCarousel({ items = [] }) {
   const dragStartX = useRef(0);
   const dragAccum = useRef(0);
   const dragging = useRef(false);
-  const lastTime = useRef(0);
   const lastX = useRef(0);
 
   const onPointerDown = (e) => {
@@ -44,7 +74,6 @@ export default function DeckCarousel({ items = [] }) {
     dragStartX.current = e.clientX ?? (e.touches && e.touches[0]?.clientX) ?? 0;
     dragAccum.current = 0;
     lastX.current = dragStartX.current;
-    lastTime.current = performance.now();
     e.currentTarget.setPointerCapture?.(e.pointerId);
   };
   const onPointerMove = (e) => {
@@ -79,13 +108,15 @@ export default function DeckCarousel({ items = [] }) {
   return (
     <div className="relative mx-auto flex w-full max-w-5xl items-center justify-center overflow-visible py-8">
       <div
-        className="relative h-[min(70vh,540px)] w-full touch-pan-y select-none"
+        ref={containerRef}
+        className="relative h-[min(70vh,540px)] w-full touch-pan-y select-none outline-none"
         onWheel={onWheel}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         role="region"
         aria-label="Rolling movie deck carousel"
+        tabIndex={0}
       >
         {/* Center anchor */}
         <div className="pointer-events-none absolute left-1/2 top-1/2 h-1 w-1 -translate-x-1/2 -translate-y-1/2" />
@@ -122,6 +153,26 @@ export default function DeckCarousel({ items = [] }) {
             </motion.div>
           );
         })}
+
+        {/* Navigation Arrows */}
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-between px-2">
+          <button
+            type="button"
+            onClick={goPrev}
+            className="pointer-events-auto inline-flex h-11 w-11 items-center justify-center rounded-full bg-slate-900/70 text-cyan-100 ring-1 ring-white/10 backdrop-blur transition hover:bg-slate-900/90"
+            aria-label="Previous"
+          >
+            <ChevronLeft className="h-6 w-6" />
+          </button>
+          <button
+            type="button"
+            onClick={goNext}
+            className="pointer-events-auto inline-flex h-11 w-11 items-center justify-center rounded-full bg-slate-900/70 text-cyan-100 ring-1 ring-white/10 backdrop-blur transition hover:bg-slate-900/90"
+            aria-label="Next"
+          >
+            <ChevronRight className="h-6 w-6" />
+          </button>
+        </div>
       </div>
     </div>
   );
