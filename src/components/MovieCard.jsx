@@ -72,7 +72,7 @@ export default function MovieCard({ movie, index }) {
         <div className="relative overflow-hidden rounded-2xl bg-[radial-gradient(ellipse_at_top_left,rgba(59,130,246,0.15),rgba(56,189,248,0.08)_40%,rgba(168,85,247,0.08)_70%,transparent_100%)] ring-1 ring-white/10 backdrop-blur-xl">
           {/* Header moved to top */}
           <div className="flex items-center justify-between px-4 pt-3 pb-2">
-            <h3 className="line-clamp-1 bg-gradient-to-r from-cyan-200 to-indigo-300 bg-clip-text text-lg font-bold text-transparent">
+            <h3 className="line-clamp-1 rounded-md bg-slate-900 px-2 py-1 text-lg font-bold text-cyan-100 ring-1 ring-white/10">
               {movie.title}
             </h3>
             <div className="flex items-center gap-1 rounded-full bg-slate-900/80 px-2.5 py-1 text-cyan-200 ring-1 ring-white/10 backdrop-blur">
