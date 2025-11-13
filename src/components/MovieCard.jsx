@@ -39,6 +39,12 @@ export default function MovieCard({ movie, index }) {
   const shadowOpacity = useTransform(glow, [0, 1], [0.25, 0.6]);
   const ringOpacity = useTransform(glow, [0, 1], [0.2, 0.6]);
 
+  // Framer v11 uses MotionValue with 'get' method and transform accepts functions.
+  // We avoid calling .to on MotionValue (v11 change) and instead compute derived styles inline.
+  const boxShadow = shadowOpacity.get() 
+    ? `0 15px 40px rgba(56, 189, 248, ${shadowOpacity.get()})`
+    : "0 15px 40px rgba(56, 189, 248, 0.3)";
+
   return (
     <motion.div
       layout
@@ -56,8 +62,8 @@ export default function MovieCard({ movie, index }) {
         {/* Outer animated ring */}
         <motion.div
           style={{
-            boxShadow: shadowOpacity.to(v => `0 15px 40px rgba(56, 189, 248, ${v})`),
-            opacity: ringOpacity
+            boxShadow,
+            opacity: ringOpacity,
           }}
           className="pointer-events-none absolute -inset-0.5 rounded-2xl bg-gradient-to-br from-cyan-400/60 via-indigo-500/60 to-fuchsia-500/60 blur-md"
         />
@@ -77,7 +83,7 @@ export default function MovieCard({ movie, index }) {
             {/* Rating badge */}
             <div className="absolute left-3 top-3 flex items-center gap-1 rounded-full bg-slate-900/70 px-2.5 py-1 text-cyan-200 ring-1 ring-white/10 backdrop-blur">
               <Star className="h-4 w-4 text-yellow-300" fill="#FDE047" />
-              <span className="text-xs font-semibold tracking-wide">{movie.rating.toFixed(1)}</span>
+              <span className="text-xs font-semibold tracking-wide">{Number(movie.rating).toFixed(1)}</span>
             </div>
 
             {/* Shine sweep */}

@@ -1,26 +1,46 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import MovieCard from "./components/MovieCard";
+import DeckCarousel from "./components/DeckCarousel";
 
-const API_BASE = import.meta.env.VITE_BACKEND_URL || "";
+function getApiBase() {
+  const env = import.meta.env.VITE_BACKEND_URL;
+  if (env && typeof env === "string" && env.trim().length > 0) return env.trim().replace(/\/$/, "");
+  try {
+    const url = new URL(window.location.origin);
+    // Assume backend runs on 8000 in dev
+    url.port = "8000";
+    return url.origin.replace(/\/$/, "");
+  } catch {
+    return "";
+  }
+}
+
+const API_BASE = getApiBase();
 
 export default function App() {
   const [movies, setMovies] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
+    let mounted = true;
     async function fetchMovies() {
       try {
         const res = await fetch(`${API_BASE}/api/movies`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
-        setMovies(data.results || []);
+        if (mounted) setMovies(data.results || []);
       } catch (e) {
         console.error(e);
+        if (mounted) setError("Failed to load movies. Check backend URL.");
       } finally {
-        setLoading(false);
+        if (mounted) setLoading(false);
       }
     }
     fetchMovies();
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   return (
@@ -50,23 +70,24 @@ export default function App() {
         </p>
       </header>
 
-      {/* Grid */}
-      <main className="mx-auto max-w-7xl px-6 pb-24 pt-10">
-        {loading ? (
+      {/* Content */}
+      <main className="mx-auto max-w-7xl px-6 pb-24 pt-6">
+        {loading && (
           <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
             {Array.from({ length: 10 }).map((_, i) => (
               <div key={i} className="h-80 animate-pulse rounded-2xl bg-slate-800/30 ring-1 ring-white/10" />
             ))}
           </div>
-        ) : (
-          <motion.div
-            layout
-            className="grid grid-cols-2 gap-5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
-          >
-            {movies.map((m, idx) => (
-              <MovieCard key={m.id} movie={m} index={idx} />
-            ))}
-          </motion.div>
+        )}
+
+        {!loading && error && (
+          <div className="rounded-xl bg-red-500/10 p-4 text-red-200 ring-1 ring-red-500/30">
+            {error} Current base: <span className="font-mono">{API_BASE || 'relative'}</span>
+          </div>
+        )}
+
+        {!loading && !error && movies.length > 0 && (
+          <DeckCarousel items={movies} />
         )}
       </main>
 
