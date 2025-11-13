@@ -1,5 +1,5 @@
-import { motion, useMotionValue, animate } from "framer-motion";
-import { useEffect, useRef, useCallback } from "react";
+import { motion, useMotionValue, animate, useMotionValueEvent } from "framer-motion";
+import { useEffect, useRef, useCallback, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import MovieCard from "./MovieCard";
 
@@ -8,10 +8,14 @@ import MovieCard from "./MovieCard";
  * - Arranges cards in a circular "rolling deck" around the center
  * - Slowly auto-rotates; users can wheel/drag to nudge rotation
  * - Swipe left/right to move to next/prev card (loops)
- * - Arrow buttons to navigate as well
+ * - Arrow buttons + keyboard to navigate
  */
 export default function DeckCarousel({ items = [] }) {
   const rotation = useMotionValue(0);
+  const [angle, setAngle] = useState(0);
+
+  // Re-render on rotation change so positions update
+  useMotionValueEvent(rotation, "change", (v) => setAngle(v));
 
   // Auto-rotate slowly
   useEffect(() => {
@@ -84,7 +88,7 @@ export default function DeckCarousel({ items = [] }) {
     dragAccum.current += dx;
     rotation.set((rotation.get() + dx * 0.25) % 360);
   };
-  const onPointerUp = () => {
+  const endDrag = () => {
     if (!dragging.current) return;
     dragging.current = false;
     const total = dragAccum.current;
@@ -113,7 +117,9 @@ export default function DeckCarousel({ items = [] }) {
         onWheel={onWheel}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
+        onPointerUp={endDrag}
+        onPointerCancel={endDrag}
+        onPointerLeave={endDrag}
         role="region"
         aria-label="Rolling movie deck carousel"
         tabIndex={0}
@@ -123,7 +129,7 @@ export default function DeckCarousel({ items = [] }) {
 
         {items.map((movie, i) => {
           const baseAngle = i * step;
-          const current = rotation.get();
+          const current = angle;
           const deg = ((baseAngle + current) % 360) * (Math.PI / 180);
           const x = Math.cos(deg) * radius;
           const y = Math.sin(deg) * radius;
